@@ -1,0 +1,16 @@
+all: data/departments_with_reserve.topojson
+
+data/departments_with_reserve.topojson: data/departments_with_reserve.json
+	topojson data/departments_with_reserve.json -o data/departments_with_reserve.topojson -p dept_code=CODE_DEPT,name=NOM_DEPT,montant=montant
+
+data/departments_with_reserve.json: reserve.py
+	python reserve.py
+
+reserve.py: reserve.ipynb
+	ipython nbconvert reserve.ipynb --to python
+
+clean:
+	rm reserve.py
+	rm data/departments_with_reserve.json
+	rm data/departments_with_reserve.topojson
+

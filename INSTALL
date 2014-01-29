@@ -1,0 +1,8 @@
+# DEPENDENCIES
+
+## PYTHON
+pip install pandas
+
+## NODE.JS
+npm install -g topojson
+

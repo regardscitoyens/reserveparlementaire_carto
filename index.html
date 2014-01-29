@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+  <style>
+    .department {
+      opacity: 0.85;
+      stroke-width: 0.5;
+      stroke: rgb(10,10,10);
+    }
+    .department:hover {
+      opacity: 1;
+      stroke-width: 1.5;
+    }
+  </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <label><input type="radio" name="mode" value="total" checked>Tous</label>
+        <label><input type="radio" name="mode" value="ECOLO"> ECOLO</label>
+        <label><input type="radio" name="mode" value="GDR"> GDR</label>
+        <label><input type="radio" name="mode" value="SRC"> SRC</label>
+        <label><input type="radio" name="mode" value="NI"> NI</label>
+        <label><input type="radio" name="mode" value="RRDP"> RRDP</label>
+        <label><input type="radio" name="mode" value="UDI"> UDI</label>
+        <label><input type="radio" name="mode" value="UMP">UMP</label>
+      </div>
+      <div id="map"></div>
+      <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+      <script src="http://d3js.org/topojson.v1.min.js"></script>
+      <script src="./js/cartogram.js" charset="utf-8"></script>
+      <script type="text/javascript">
+        var groups = ['total', 'ECOLO', 'GDR', 'SRC', 'NI', 'RRDP', 'UDI', 'UMP'];
+        var colors = {
+          total: ["#FFFFFF", "rgb(10,10,10)"],
+          ECOLO: ["#FFFFFF", "#7FAA03"],
+          'GDR': ["#FFFFFF", "#DD0000"],
+          'SRC': ["#FFFFFF", "#F25E5E"],
+          'NI': ["#FFFFFF", "rgb(10,10,10)"],
+          'RRDP': ["#FFFFFF", "#800080"],
+          'UDI': ["#FFFFFF", "#74D0F1"],
+          'UMP': ["#FFFFFF", "#0A599E"]
+        }
+        var colorScales = {};
+        
+        var tooltip = d3.select(document.createElement('div'))
+          .append("div")
+          .attr("class", "popover")
+          .style("display", 'none');
+        var format = d3.format("0,000");
+        document.body.appendChild(tooltip.node());
+        var width = 500, height = 550;
+        var path = d3.geo.path();
+        var projection = d3.geo.conicConformal() // Lambert-93
+                .center([2.454071, 47.279229])
+                .scale(3000)
+                .translate([width / 2, height / 2]);
+        path.projection(projection);
+
+        var svg = d3.select("#map").append("svg")
+          .attr("width", width)
+          .attr("height", height);
+
+          d3.json('./data/departments_with_reserve.topojson', function(error, departments) {
+              var features = topojson.feature(departments, departments.objects.departments_with_reserve).features;
+              var valueAttr = 'total'
+            groups.forEach(function(g) {
+              colorScales[g] = d3.scale.linear().range(colors[g])
+              .domain(
+                [0, d3.max(features, function(d) { return d.properties.montant[g]})]
+                );
+              });
+
+            var map =svg.selectAll(".department")
+              .data(features)
+              .enter().append("path")
+              .attr('class', 'department')
+              .attr("fill", function(d) { return colorScales[valueAttr](d.properties.montant[valueAttr]||0); })
+              .on("mouseover", function(d, i) {
+                var text = "<div class='popover-content'> <b>" +
+                      d.properties.name + " : " + format(d.properties.montant[valueAttr]||0) + ' €'
+                  "</b></div>";
+                tooltip.html(text);
+                tooltip.style("left", d3.event.pageX + 10 + "px");
+                tooltip.style("top", d3.event.pageY - 50 + "px");
+                tooltip.style("display", "block")
+              })
+              .on("mouseout", function() {
+                tooltip.style("display", "none");
+              })
+              .attr("d", path);
+
+          d3.selectAll("input").on("change", function change() {
+            valueAttr = this.value;
+            map.data(features)
+              .transition()
+              .duration(1500)
+              .attr("fill", function(d) { return colorScales[valueAttr](d.properties.montant[valueAttr]||0); });
+          });
+        });
+      </script>
+    </div>
+  </body>
+</html>
